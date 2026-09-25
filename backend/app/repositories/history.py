@@ -10,18 +10,22 @@ def insert_run(
     waste_pct: float,
     result: dict,
     note: str = "",
+    box_size: int | None = None,
 ) -> int:
+    if box_size is None:
+        box_size = result.get("box_size")
     conn = connect()
     try:
         cur = conn.execute(
             """
-            INSERT INTO calc_runs(room_id, tile_id, waste_pct, result_json, note, created_at)
-            VALUES (?,?,?,?,?,?)
+            INSERT INTO calc_runs(room_id, tile_id, waste_pct, box_size, result_json, note, created_at)
+            VALUES (?,?,?,?,?,?,?)
             """,
             (
                 room_id,
                 tile_id,
                 waste_pct,
+                box_size,
                 json.dumps(result, ensure_ascii=False),
                 note,
                 datetime.now(timezone.utc).isoformat(),

@@ -9,17 +9,24 @@ def tile_count(
     tile_l: float,
     tile_w: float,
     waste_pct: float,
+    box_size: int = 1,
 ) -> dict:
     """
     raw_count: ceil(room_area / tile_piece_area)
-    order_count: ceil(raw * (1 + waste_pct/100))
+    order_count: ceil(raw * (1 + waste_pct/100))  # 进位前面积法订货量
+    box_count / boxed_count: order_count 向上取整到 box_size 整倍后的箱数与片数
+    box_size=1 时进位后等于进位前；box_size<=0 非法。
     """
+    if int(box_size) <= 0:
+        raise ValueError("box_size must be positive")
     area = float(room_l) * float(room_w)
     piece = float(tile_l) * float(tile_w)
     if piece <= 0 or area < 0:
         raise ValueError("invalid dimensions")
     raw = ceil_units(area / piece)
     with_waste = ceil_units(raw * (1 + float(waste_pct) / 100.0))
+    box_n = int(box_size)
+    box_count = ceil_units(with_waste / box_n)
     layout = layout_preview(room_l, room_w, tile_l, tile_w)
     return {
         "area_m2": round(area, 3),
@@ -27,6 +34,9 @@ def tile_count(
         "raw_count": raw,
         "waste_pct": float(waste_pct),
         "order_count": with_waste,
+        "box_size": box_n,
+        "box_count": box_count,
+        "boxed_count": box_count * box_n,
         "layout": layout,
     }
 

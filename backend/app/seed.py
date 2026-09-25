@@ -18,6 +18,7 @@ def init_db():
             name TEXT NOT NULL,
             tile_l REAL NOT NULL,
             tile_w REAL NOT NULL,
+            box_size INTEGER NOT NULL DEFAULT 1,
             data_quality TEXT NOT NULL DEFAULT 'clean'
         );
         CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -26,12 +27,15 @@ def init_db():
             room_id INTEGER,
             tile_id INTEGER,
             waste_pct REAL,
+            box_size INTEGER,
             result_json TEXT NOT NULL,
             note TEXT DEFAULT '',
             created_at TEXT NOT NULL
         );
         """
     )
+    _ensure_column(conn, "tiles", "box_size", "INTEGER NOT NULL DEFAULT 1")
+    _ensure_column(conn, "calc_runs", "box_size", "INTEGER")
     if conn.execute("SELECT COUNT(*) c FROM rooms").fetchone()["c"] == 0:
         conn.executemany(
             "INSERT INTO rooms(name,length,width,data_quality,note) VALUES (?,?,?,?,?)",
@@ -42,13 +46,21 @@ def init_db():
             ],
         )
         conn.executemany(
-            "INSERT INTO tiles(name,tile_l,tile_w,data_quality) VALUES (?,?,?,?)",
+            "INSERT INTO tiles(name,tile_l,tile_w,box_size,data_quality) VALUES (?,?,?,?,?)",
             [
-                ("600x600", 0.6, 0.6, "clean"),
-                ("800x800", 0.8, 0.8, "clean"),
-                ("脏数据-零面积", 0.0, 0.6, "dirty"),
+                ("600x600", 0.6, 0.6, 4, "clean"),
+                ("800x800", 0.8, 0.8, 3, "clean"),
+                ("脏数据-零面积", 0.0, 0.6, 1, "dirty"),
             ],
         )
         conn.execute("INSERT INTO settings(key,value) VALUES ('waste_pct','8')")
         conn.commit()
     conn.close()
+
+
+def _ensure_column(conn, table: str, column: str, decl: str):
+    """Add a column to an existing table when the DB predates it (SQLite has no ADD COLUMN IF NOT EXISTS)."""
+    cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in cols:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+        conn.commit()
