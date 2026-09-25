@@ -18,7 +18,8 @@ def init_db():
             name TEXT NOT NULL,
             tile_l REAL NOT NULL,
             tile_w REAL NOT NULL,
-            data_quality TEXT NOT NULL DEFAULT 'clean'
+            data_quality TEXT NOT NULL DEFAULT 'clean',
+            pieces_per_box INTEGER NOT NULL DEFAULT 1
         );
         CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS calc_runs(
@@ -32,6 +33,7 @@ def init_db():
         );
         """
     )
+    _migrate(conn)
     if conn.execute("SELECT COUNT(*) c FROM rooms").fetchone()["c"] == 0:
         conn.executemany(
             "INSERT INTO rooms(name,length,width,data_quality,note) VALUES (?,?,?,?,?)",
@@ -42,13 +44,23 @@ def init_db():
             ],
         )
         conn.executemany(
-            "INSERT INTO tiles(name,tile_l,tile_w,data_quality) VALUES (?,?,?,?)",
+            "INSERT INTO tiles(name,tile_l,tile_w,data_quality,pieces_per_box) VALUES (?,?,?,?,?)",
             [
-                ("600x600", 0.6, 0.6, "clean"),
-                ("800x800", 0.8, 0.8, "clean"),
-                ("脏数据-零面积", 0.0, 0.6, "dirty"),
+                ("600x600", 0.6, 0.6, "clean", 4),
+                ("800x800", 0.8, 0.8, "clean", 3),
+                ("脏数据-零面积", 0.0, 0.6, "dirty", 1),
             ],
         )
         conn.execute("INSERT INTO settings(key,value) VALUES ('waste_pct','8')")
         conn.commit()
     conn.close()
+
+
+def _migrate(conn):
+    """Add columns introduced after the initial schema to existing databases."""
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(tiles)").fetchall()}
+    if "pieces_per_box" not in cols:
+        conn.execute(
+            "ALTER TABLE tiles ADD COLUMN pieces_per_box INTEGER NOT NULL DEFAULT 1"
+        )
+        conn.commit()

@@ -19,5 +19,8 @@ class EstimateResponse(BaseModel):
     raw_count: int
     waste_pct: float
     order_count: int
+    pieces_per_box: int
+    box_count: int
+    order_count_rounded: int
     layout: dict
     run_id: int | None = None

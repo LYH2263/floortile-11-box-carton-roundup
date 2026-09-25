@@ -41,7 +41,7 @@ async function saveRun() {
   <div class="page">
     <h1>下单测算</h1>
     <label>房间 <select v-model.number="roomId"><option v-for="r in rooms" :key="r.id" :value="r.id">{{ r.name }}</option></select></label>
-    <label>砖型 <select v-model.number="tileId"><option v-for="t in tiles" :key="t.id" :value="t.id">{{ t.name }}</option></select></label>
+    <label>砖型 <select v-model.number="tileId"><option v-for="t in tiles" :key="t.id" :value="t.id">{{ t.name }}（每箱 {{ t.pieces_per_box ?? 1 }} 片）</option></select></label>
     <button @click="preview">试算</button>
     <button @click="saveRun">保存记录</button>
     <p v-if="err" class="alert">{{ err }}</p>
